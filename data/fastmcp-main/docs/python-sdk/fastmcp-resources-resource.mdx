@@ -1,0 +1,173 @@
+---
+title: resource
+sidebarTitle: resource
+---
+
+# `fastmcp.resources.resource`
+
+
+Base classes and interfaces for FastMCP resources.
+
+## Classes
+
+### `ResourceContent` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L36" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+
+Wrapper for resource content with optional MIME type and metadata.
+
+Accepts any value for content - strings and bytes pass through directly,
+other types (dict, list, BaseModel, etc.) are automatically JSON-serialized.
+
+
+**Methods:**
+
+#### `to_mcp_resource_contents` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L91" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+to_mcp_resource_contents(self, uri: AnyUrl | str) -> mcp.types.TextResourceContents | mcp.types.BlobResourceContents
+```
+
+Convert to MCP resource contents type.
+
+**Args:**
+- `uri`: The URI of the resource (required by MCP types)
+
+**Returns:**
+- TextResourceContents for str content, BlobResourceContents for bytes
+
+
+### `ResourceResult` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L118" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+
+Canonical result type for resource reads.
+
+Provides explicit control over resource responses: multiple content items,
+per-item MIME types, and metadata at both the item and result level.
+
+
+**Methods:**
+
+#### `to_mcp_result` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L193" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+to_mcp_result(self, uri: AnyUrl | str) -> mcp.types.ReadResourceResult
+```
+
+Convert to MCP ReadResourceResult.
+
+**Args:**
+- `uri`: The URI of the resource (required by MCP types)
+
+**Returns:**
+- MCP ReadResourceResult with converted contents
+
+
+### `Resource` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L209" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+
+Base class for all resources.
+
+
+**Methods:**
+
+#### `from_function` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L234" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+from_function(cls, fn: Callable[..., Any], uri: str | AnyUrl) -> FunctionResource
+```
+
+#### `set_default_mime_type` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L273" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+set_default_mime_type(cls, mime_type: str | None) -> str
+```
+
+Set default MIME type if not provided.
+
+
+#### `set_default_name` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L280" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+set_default_name(self) -> Self
+```
+
+Set default name from URI if not provided.
+
+
+#### `read` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L290" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+read(self) -> str | bytes | ResourceResult
+```
+
+Read the resource content.
+
+Subclasses implement this to return resource data. Supported return types:
+    - str: Text content
+    - bytes: Binary content
+    - ResourceResult: Full control over contents and result-level meta
+
+
+#### `convert_result` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L302" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+convert_result(self, raw_value: Any) -> ResourceResult
+```
+
+Convert a raw result to ResourceResult.
+
+This is used in two contexts:
+1. In _read() to convert user function return values to ResourceResult
+2. In tasks_result_handler() to convert Docket task results to ResourceResult
+
+Handles ResourceResult passthrough and converts raw values using
+ResourceResult's normalization.
+
+
+#### `to_mcp_resource` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L358" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+to_mcp_resource(self, **overrides: Any) -> SDKResource
+```
+
+Convert the resource to an SDKResource.
+
+
+#### `key` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L381" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+key(self) -> str
+```
+
+The globally unique lookup key for this resource.
+
+
+#### `register_with_docket` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L386" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+register_with_docket(self, docket: Docket) -> None
+```
+
+Register this resource with docket for background execution.
+
+
+#### `add_to_docket` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L392" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+add_to_docket(self, docket: Docket, **kwargs: Any) -> Execution
+```
+
+Schedule this resource for background execution via docket.
+
+**Args:**
+- `docket`: The Docket instance
+- `fn_key`: Function lookup key in Docket registry (defaults to self.key)
+- `task_key`: Redis storage key for the result
+- `**kwargs`: Additional kwargs passed to docket.add()
+
+
+#### `get_span_attributes` <sup><a href="https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/resources/resource.py#L413" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+get_span_attributes(self) -> dict[str, Any]
+```
